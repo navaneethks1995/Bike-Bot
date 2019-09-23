@@ -9,10 +9,9 @@ const bikeSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    available:{
-        type: Boolean,
-        required: true,
-        default: true
+    count:{
+        type: Number,
+        default: 1
     }
 
 });
