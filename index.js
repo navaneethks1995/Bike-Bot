@@ -48,7 +48,8 @@ app.post('/dialogflow', express.json(), (req, res) => {
   const agent = new WebhookClient({ request: req, response: res });
   const session_id = agent.session.split("/").slice(-1)[0];
   // console.log(agent.session.split("/").slice(-1)[0])  // Get Session Id
-  function welcomeIntent(agent) {
+  async function welcomeIntent(agent) {
+    console.log('Entered welcomeHandler')
     agent.addResponse_(`Hey there, I am Vroomy. How may I assist you?`)
     agent.addResponse_(new Suggestion('Know shop timings'))
     agent.addResponse_(new Suggestion('Make an appointment'))
@@ -100,7 +101,11 @@ app.post('/dialogflow', express.json(), (req, res) => {
     start_date = start_date.format();
     let end_date = moment(start_date).add(1, 'hours').format()
     let dtobj = { start_date, end_date };
-
+    agent.setContext({
+      name: 'user_detail',
+      lifespan: 2,
+      parameters:  {name, email}
+    });
     const newCustomer = Customer({
       name,
       email,
@@ -110,6 +115,19 @@ app.post('/dialogflow', express.json(), (req, res) => {
     await newCustomer.save().catch(err => console.log(err));
     
     agent.addResponse_(`Thank you ${name} for contacting us! Appointment scheduled for ${date_f} at ${time_f}. Further details would be sent to ${email}`);
+    agent.addResponse_('Can I help you with anything else?');
+    agent.addResponse_(new Suggestion('Know shop timings'))
+    agent.addResponse_(new Suggestion('Rent a bike'))
+  }
+
+  async function rentBike(agent) {
+    const userDetailsContext = agent.getContext('Temperature');
+    const bikes = await Bike.find().catch(err => console.log(err));
+    console.log(bikes);
+    if (userDetailsContext.parameters.name) {
+      agent.addResponse_(`These are the bikes for you ${userDetailsContext.parameters.name}`);
+
+    }
   }
 
 
@@ -117,7 +135,8 @@ app.post('/dialogflow', express.json(), (req, res) => {
   let intentMap = new Map();
   intentMap.set('Make Appointment', makeAppointment);
   intentMap.set('Default Welcome Intent', welcomeIntent);
-  intentMap.set('Default Fallback Intent', fallbackIntent)
+  intentMap.set('Default Fallback Intent', fallbackIntent);
+  intentMap.set('Rent Bike', rentBike)
   agent.handleRequest(intentMap);
 });
 
